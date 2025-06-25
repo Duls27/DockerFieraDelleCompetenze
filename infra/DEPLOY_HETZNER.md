@@ -43,13 +43,11 @@ ssh root@<IP_DEL_SERVER>
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-
 ```
 ## Step 3 — Installazione dipendenze base
 
 ```bash
 sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
-
 ```
 
 ## Step 4 — Aggiunta chiave GPG Docker e repository Docker
@@ -76,29 +74,162 @@ sudo apt install -y docker-ce docker-ce-cli containerd.io
 ```
 2. Installa Docker Compose (plugin standalone)
 
+Scarica Docker Compose
 ```bash
 sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
   -o /usr/local/bin/docker-compose
 ```
-```basudo chmod +x /usr/local/bin/docker-compose
+Rendi eseguibile il file
+```bash
+sudo chmod +x /usr/local/bin/docker-compose
 ```
 3. Verifica le versioni
 ```bash
-
+docker --version
+docker-compose --version
 ```
 4. (Opzionale ma consigliato) Permetti al tuo utente di usare Docker senza sudo
 ```bash
+sudo usermod -aG docker $USER
+newgrp docker        # applica subito il gruppo senza scollegarti
+```
+
+## Step 6 — Clona il progetto sulla macchina
+ 1. Posizionarti nella home directory
+```bash
+cd ~
+```
+2. Clonare il progetto da GitHub
+```bash
+git clone https://github.com/Duls27/DockerFieraDelleCompetenze.git
 
 ```
+3. Vai nella cartella infra del progetto
+```bash
+cd DockerFieraDelleCompetenze/infra
+```
+4. Crea il file .env da .env.example
+
+Caricalo direttamente già compilato (da powershell o bash), l'IP inserito è di esempio
+```bash
+scp "C:\Users\simon\Desktop\.env" root@91.99.153.69:/root/DockerFieraDelleCompetenze/infra/.env
+```
+oopure crealo da .env.example
+```bash
+cp .env.example .env
+nano .env
+```
+Modifica solo le variabili di produzione, ad esempio:
+
+- PGUSER=postgres
+- PGPASSWORD=
+- PGHOST=db
+- PGPORT=5432
+- PGDATABASE=
+
+- JWT_SECRET=
+
+//COnfigurazione Brevo per email
+- SMTP_HOST=smtp-relay.brevo.com
+- SMTP_PORT=587
+- SMTP_USER=
+- SMTP_PASS=
+- EMAIL_FROM="Fiera delle Competenze <fieradellecompetenzelombardia@gmail.com>"
+
+//Frontend React (IP pubblico della macchina creata in precedenza)
+- REACT_APP_API_BASE_URL=http://<IP_PUBBLICO>:5000
+
+5. Modifica il file di creazione del DB, ed inserisci la tua password personale per l'invio dell'email dell'amministratore.
+
+Entra nella folder db
+```bash
+cd ~/DockerFieraDelleCompetenze/infra/db 
+```
+Apri con nano il file init.sql
+```bash
+nano init.sql
+```
+Modificala riga ed inserisci la tua email!
+```sql
+INSERT INTO amministratori
+        (nome,  cognome, email, username, password)
+VALUES  ('Super', 'Admin', 'tua.email@gmail.com', 'super.admin', '');
+```
+
+6. Lancia il build e avvia tutti i servizi con un solo comando
+Torna nella folder se non sei più li
+```bash
+cd ~/DockerFieraDelleCompetenze/infra 
+```
+Lancia docker compose e build
+```bash
+docker compose up -d --build
+```
+Cosa succede ora (step-by-step)?
+1. Docker scarica (o aggiorna) l’immagine postgres:15-alpine.
+2. Costruisce le immagini del backend e del frontend dai tuoi Dockerfile.
+3. Esegue i tre container:
+- db (Postgres)
+- backend (Node/Express)
+- frontend (React + nginx)
+
+⚠️ La primissima build può richiedere qualche minuto—soprattutto lo step npm install / npm run build del frontend.
+
+## Step 7 — Verifica funzionamento servizi
+
+1. Controlla che i container siano attivi:
+```bash
+docker compose ps
+```
+Dovresti vedere qualcosa del genere:
+```bash
+NAME                       SERVICE    STATUS    PORTS
+fiera-db-1                db         Up        5432/tcp
+fiera-backend-1           backend    Up        0.0.0.0:5000->5000/tcp
+fiera-frontend-1          frontend   Up        0.0.0.0:3000->80/tcp
+```
+
+2. Prova da browser
+- Frontend React:
+- http://<IL_TUO_IP_PUBBLICO>:3000
+
+Se tutto va bene, dovresti vedere la tua interfaccia.
+
+- Backend API test (opzionale):
+- http://<IL_TUO_IP_PUBBLICO>:5000
+oppure prova una rotta nota come:
 
 ```bash
-
+NAME                       SERVICE    STATUS    PORTS
+curl http://localhost:5000/amministratori
 ```
 
-## Step 6 — Aggiornamento sistema operativo
-
+3. Invia prima password admin (se non fatto)
+Senza questa non potrai creare gli altri amministratori, devi aver prima modificato l'email negli steo precdenti, step 6.5
 ```bash
+curl -X POST http://localhost:5000/amministratori/send-password/1
+```
+4. Verifica funzionamento login
+Dalla pagina web, prova a loggarti con l’admin che hai creato.
+Se ottieni errore login, controlla:
+- che REACT_APP_API_BASE_URL nel frontend punti a http://<IP>:5000
+- che il backend sia effettivamente attivo (docker compose logs backend)
+- eventuali errori da F12 → Console nel browser
+
+5. (Facoltativo) Accesso a Postgres da remoto
+
+Ora che esponi 5432, puoi connetterti da pgAdmin o DBeaver dal tuo PC con:
+```bash
+# === connect_db.sh =========================================
+PGAdmin 4
+# Parametri di connessione
+export PGHOST="91.99.153.69"           # IP pubblico della VPS
+export PGPORT="5432"                   # porta mappata nel docker-compose
+export PGDATABASE="fieradellecompetenze2025"
+export PGUSER="postgres"
+export PGPASSWORD="<<<la-password-che-hai-messo-nel-.env>>>"
+# ==============================================================
+
 
 ```
 
-## Step 7 — Aggiornamento sistema operativo
