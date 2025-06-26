@@ -229,7 +229,36 @@ export PGDATABASE="fieradellecompetenze2025"
 export PGUSER="postgres"
 export PGPASSWORD="<<<la-password-che-hai-messo-nel-.env>>>"
 # ==============================================================
-
-
 ```
 
+
+# Caricare modifiche una volta effettuato il deploy
+
+1. Connettersi al server Hetzner via SSH
+```bash
+ssh root@<IP-del-server>
+```
+2. Entrare nella cartella del progetto
+```bash
+cd /percorso/del/progetto
+```
+3. Fermare i container Docker attivi
+```bash
+docker-compose down
+```
+
+4. Aggiornare il codice sorgente
+E' possbile o riclonare tutto il prgetto da git, oppure iniettare i file cmabiati nelle cartelle corrette
+In caso si ricarichiil progetto docker, dovrai ricreare il file .env (vedi punto 4 sezione precedente)
+```bash
+git pull origin main
+```
+5. Ricostruire l’immagine Docker (se hai modificato il Dockerfile o codice sorgente)
+```bash
+docker-compose build
+```
+6. Riavviare i container
+```bash
+docker-compose up -d
+```
+7. Rifare verfiche funzionamento come spieagto sopra
