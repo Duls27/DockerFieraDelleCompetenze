@@ -67,6 +67,8 @@ const HowToUse = () => {
           <p style={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
             La registrazione deve essere effettuata <strong>esclusivamente dai capi reparto</strong>. 
             Una volta completata, i capi riceveranno i codici di accesso da distribuire ai ragazzi (Esploratori, Guide) e ai responsabili degli stand.
+
+            Una volta approvata la registrazione, da un amministratore,  <strong>i codici verranno inviati all'email </strong> indicata in fase di registrazione.
           </p>
           <p style={{ fontSize: '1.1rem', lineHeight: 1.6 }}>
             Questi codici sono necessari per poter votare e accedere alle diverse funzionalità dell’app.
