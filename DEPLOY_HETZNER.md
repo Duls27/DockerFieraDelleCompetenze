@@ -246,6 +246,14 @@ cd /percorso/del/progetto
 ```bash
 docker-compose down
 ```
+Se vi sono grossi cambiamenti, che intaccanoa nche il db allora bisognerà eliminare proprioi container.
+```bash
+docker-compose down -v
+```
+Se necessario anche le immagini
+```bash
+docker image prune -a
+```
 
 4. Aggiornare il codice sorgente
 E' possbile o riclonare tutto il prgetto da git, oppure iniettare i file cmabiati nelle cartelle corrette
