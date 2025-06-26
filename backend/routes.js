@@ -9,6 +9,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const crypto  = require('crypto');
 const { log } = require('console');
+const { Logger } = require('winston');
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 //funcions
@@ -25,6 +26,24 @@ function authenticateToken(req, res, next) {
 }
 
 //GET methods
+
+// --- GET: prendi il messaggio unico
+router.get('/notizia', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT titolo, corpo, data_pubblicazione FROM comunicazioni WHERE id = 1'
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Nessuna notizia attualmente disponibile' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    logger.error('Errore recupero messaggio notizie:', error);
+    res.status(500).json({ message: 'Errore server' });
+  }
+});
 
 // --- GET lista amministratori ---
 router.get('/amministratori', async (req, res) => {
@@ -95,18 +114,32 @@ router.get('/registrazioni-generali/approvate', async (req, res) => {
 });
 
 
-// --- GET: modalità fiera, se false voto disattivato
-router.get('/configurazione', async (req, res) => {
-  logger.info('Ricevuta richiesta GET /configurazione');
+// --- GET: restituisce modalita_fiera per qualunque config_name
+router.get('/configurazione/:name', async (req, res) => {
+  const configName = req.params.name;
+  logger.info(`Richiesta GET /configurazione/${configName}`);
+
+  // opzionale: validazione dei nomi ammessi
+  const nomiAmmessi = ['votazioni', 'registrazioni'];
+  if (!nomiAmmessi.includes(configName)) {
+    logger.warn(`Parametro non valido: ${configName}`);
+    return res.status(400).json({ message: 'Parametro non valido' });
+  }
+
   try {
-    const result = await pool.query('SELECT modalita_fiera FROM configurazione WHERE id = 1');
-    if (result.rows.length === 0) {
-      logger.warn('Nessuna configurazione trovata con id = 1');
+    const { rows } = await pool.query(
+      'SELECT modalita_fiera FROM configurazione WHERE config_name = $1',
+      [configName]
+    );
+
+    if (rows.length === 0) {
+      logger.warn(`Configurazione non trovata: ${configName}`);
       return res.status(404).json({ message: 'Configurazione non trovata' });
     }
-    const config = result.rows[0];
-    logger.info(`Modalità fiera: ${config.modalita_fiera}`);
-    res.json({ modalita_fiera: config.modalita_fiera });
+
+    const { modalita_fiera } = rows[0];
+    logger.info(`Modalità fiera (${configName}): ${modalita_fiera}`);
+    res.json({ modalita_fiera });
   } catch (err) {
     logger.error('Errore nel recupero configurazione:', err);
     res.status(500).json({ message: 'Errore nel recupero configurazione' });
@@ -423,23 +456,79 @@ router.post('/approva-registrazione/:id', async (req, res) => {
 });
 
 
-// --- POST aggiornamento modalita_fiera
-router.post('/configurazione/modalita_fiera', async (req, res) => {
+router.post('/notizia/pubblica', async (req, res) => {
+  const { titolo, corpo } = req.body;
+
+  if (!titolo || !corpo) {
+    return res.status(400).json({ message: 'Titolo e corpo sono obbligatori' });
+  }
+
+  try {
+    // Aggiorna la riga con id = 1
+    const query = `
+      UPDATE comunicazioni
+      SET titolo = $1, corpo = $2, data_pubblicazione = NOW()
+      WHERE id = 1
+      RETURNING *;
+    `;
+
+    const result = await pool.query(query, [titolo, corpo]);
+
+    // Se nessuna riga aggiornata, potresti fare INSERT (se preferisci)
+    if (result.rowCount === 0) {
+      const insertQuery = `
+        INSERT INTO comunicazioni (id, titolo, corpo, data_pubblicazione)
+        VALUES (1, $1, $2, NOW())
+        RETURNING *;
+      `;
+      const insertResult = await pool.query(insertQuery, [titolo, corpo]);
+      return res.status(201).json(insertResult.rows[0]);
+    }
+
+    return res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Errore aggiornamento comunicazione:', error);
+    return res.status(500).json({ message: 'Errore server' });
+  }
+});
+
+// --- POST: aggiorna modalita_fiera per qualunque config_name
+// Es.: POST /configurazione/votazioni   { "modalita_fiera": true }
+router.post('/configurazione/:name', async (req, res) => {
+  const configName = req.params.name;           // votazioni | registrazioni …
   const { modalita_fiera } = req.body;
 
+  // valida il body
   if (typeof modalita_fiera !== 'boolean') {
     return res.status(400).json({ error: 'modalita_fiera deve essere booleano' });
   }
 
+  // (opzionale) limita i nomi ammessi
+  const nomiAmmessi = ['votazioni', 'registrazioni'];
+  if (!nomiAmmessi.includes(configName)) {
+    return res.status(400).json({ error: 'Parametro name non valido' });
+  }
+
   try {
-    await pool.query('UPDATE configurazione SET modalita_fiera = $1 WHERE id = 1', [modalita_fiera]);
-    res.json({ success: true });
-    logger.info(`Modalità fiera aggiornata a: ${modalita_fiera}`);
+    // aggiorna la riga corrispondente
+    const { rowCount } = await pool.query(
+      'UPDATE configurazione SET modalita_fiera = $1 WHERE config_name = $2',
+      [modalita_fiera, configName]
+    );
+
+    if (rowCount === 0) {
+      // nessuna riga con quel config_name
+      return res.status(404).json({ error: 'Configurazione non trovata' });
+    }
+
+    logger.info(`modalita_fiera (${configName}) aggiornata a: ${modalita_fiera}`);
+    res.json({ success: true, modalita_fiera });
   } catch (err) {
     logger.error('Errore aggiornamento modalita_fiera:', err);
     res.status(500).json({ error: 'Errore interno del server' });
   }
 });
+
 
 
 // --- POST /invia-email Ospite con codici

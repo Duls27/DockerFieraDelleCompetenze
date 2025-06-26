@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import logo from './logo.png';
 
@@ -98,10 +97,6 @@ const VotaOspiti = () => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#d4edda' }}>
       <div className="p-3">
-        {/* Torna alla home */}
-        <Link to="/" className="btn btn-outline-success btn-sm mb-3">
-          ← Torna alla Home
-        </Link>
 
         {/* Header con logo */}
         <div className="text-center mb-4">

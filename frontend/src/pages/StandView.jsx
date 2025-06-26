@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 import logo from './logo.png';
 
 const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
@@ -28,9 +27,6 @@ const StandView = () => {
 
   return (
     <div className="p-4" style={{ minHeight: '100vh', backgroundColor: '#d4edda' }}>
-      <Link to="/" className="btn btn-outline-success btn-sm mb-3">
-        ← Torna alla Home
-      </Link>
 
       <div className="text-center mb-4">
         <img

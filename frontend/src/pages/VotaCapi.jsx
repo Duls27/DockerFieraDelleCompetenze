@@ -1,6 +1,5 @@
 // frontend/src/pages/VotaCapi.jsx
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import axios from 'axios';
 import logo from './logo.png';
 
@@ -72,9 +71,6 @@ const VotaCapi = () => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#fff3cd' }}>
       <div className="p-3">
-        <Link to="/" className="btn btn-outline-success btn-sm mb-3">
-          ← Torna alla Home
-        </Link>
 
         <div className="text-center mb-4">
           <img

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
 
 const API_BASE = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
 
@@ -128,12 +127,7 @@ const Registrazione = () => {
         boxSizing: 'border-box',
       }}
     >
-      {/* Bottone torna alla home fuori dal box */}
-      <div style={{ marginBottom: '1rem' }}>
-        <Link to="/" className="btn btn-outline-success btn-sm">
-          ← Torna alla Home
-        </Link>
-      </div>
+
 
       <form
         onSubmit={handleSubmit}

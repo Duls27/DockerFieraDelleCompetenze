@@ -6,6 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:500
 const Settings = () => {
   /* ───────── Stato impostazioni fiera ───────── */
   const [modalitaFiera, setModalitaFiera] = useState(false);
+  const [modalitaRegistrazioni, setModalitaRegistrazioni] = useState(false); 
   const [loadingConfig, setLoadingConfig] = useState(true);
   const [configError, setConfigError] = useState('');
 
@@ -26,8 +27,10 @@ const Settings = () => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/configurazione`);
-        setModalitaFiera(res.data.modalita_fiera);
+        const resVotazioni = await axios.get(`${API_BASE_URL}/configurazione/votazioni`);       
+        const resRegistrazioni = await axios.get(`${API_BASE_URL}/configurazione/registrazioni`); 
+        setModalitaFiera(resVotazioni.data.modalita_fiera);     
+        setModalitaRegistrazioni(resRegistrazioni.data.modalita_fiera); 
       } catch {
         setConfigError('Errore nel caricamento configurazione');
       } finally {
@@ -60,12 +63,27 @@ const Settings = () => {
     setModalitaFiera(nuovoValore);
     setConfigError('');
     try {
-      await axios.post(`${API_BASE_URL}/configurazione/modalita_fiera`, {
+      await axios.post(`${API_BASE_URL}/configurazione/votazioni`, {
         modalita_fiera: nuovoValore,
       });
     } catch {
       setConfigError('Errore nel salvataggio della configurazione');
       setModalitaFiera(!nuovoValore); // revert
+    }
+  };
+
+  // 🔧 TOGGLE REGISTRAZIONI
+  const handleToggleRegistrazioni = async () => {
+    const nuovoValore = !modalitaRegistrazioni;
+    setModalitaRegistrazioni(nuovoValore);
+    setConfigError('');
+    try {
+      await axios.post(`${API_BASE_URL}/configurazione/registrazioni`, {
+        modalita_fiera: nuovoValore,
+      });
+    } catch {
+      setConfigError('Errore nel salvataggio delle registrazioni');
+      setModalitaRegistrazioni(!nuovoValore); // revert
     }
   };
 
@@ -131,14 +149,16 @@ const Settings = () => {
     <div className="container py-4">
       <h2>Impostazioni</h2>
 
-      {/* ───── Card: Toggle votazioni ───── */}
-      <div className="card border-warning mt-4">
+      {/* ───── Card: Toggle votazioni & registrazioni ───── */}
+      <div className="card border-warning mt-4"> {/* 🔧 */}
         <div className="card-header bg-warning">
-          <strong>Modalità Fiera – Attiva votazioni</strong>
+          <strong>Modalità Fiera – Attiva votazioni e registrazioni</strong> 
         </div>
         <div className="card-body">
           {configError && <div className="alert alert-danger">{configError}</div>}
-          <div className="form-check form-switch">
+
+          {/* Toggle votazioni */}
+          <div className="form-check form-switch mb-3">
             <input
               className="form-check-input"
               type="checkbox"
@@ -148,6 +168,20 @@ const Settings = () => {
             />
             <label className="form-check-label ms-2" htmlFor="modalitaFieraToggle">
               {modalitaFiera ? 'Votazioni attive' : 'Votazioni disattivate'}
+            </label>
+          </div>
+
+          {/* 🔧 Toggle registrazioni */}
+          <div className="form-check form-switch">
+            <input
+              className="form-check-input"
+              type="checkbox"
+              id="modalitaRegistrazioniToggle"
+              checked={modalitaRegistrazioni}
+              onChange={handleToggleRegistrazioni}
+            />
+            <label className="form-check-label ms-2" htmlFor="modalitaRegistrazioniToggle">
+              {modalitaRegistrazioni ? 'Registrazioni attive' : 'Registrazioni disattivate'}
             </label>
           </div>
         </div>

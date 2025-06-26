@@ -1,14 +1,10 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 const HowToUse = () => {
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#d4edda', padding: '1rem' }}>
       {/* Bottone torna alla home fuori dal box */}
       <div style={{ marginBottom: '1rem' }}>
-        <Link to="/" className="btn btn-outline-success btn-sm">
-          ← Torna alla Home
-        </Link>
       </div>
 
       {/* Box centrale */}
@@ -35,6 +31,26 @@ const HowToUse = () => {
         >
           📚 Come usare l’app della Fiera delle Competenze
         </h1>
+
+        {/* 🔧 Sezione 0: Home e Notizie in tempo reale */}
+        <section style={{ marginBottom: 40 }}> {/* 🔧 */}
+          <h2
+            style={{
+              color: '#fbc02d',
+              fontSize: '1.8rem',
+              marginBottom: 12,
+              fontWeight: '600',
+            }}
+          >
+            🏠 0. Home e Notizie in tempo reale {/* 🔧 */}
+          </h2>
+          <p style={{ fontSize: '1.1rem', lineHeight: 1.6 }}> {/* 🔧 */}
+            Nella <strong>Home</strong> trovi ora una sezione <em>“Notizie e comunicazioni”</em> che gli
+            organizzatori possono aggiornare in tempo reale durante la Fiera. Tienila d&rsquo;occhio — qui
+            compariranno avvisi importanti, cambi di programma e tutte le informazioni utili mentre
+            l&rsquo;evento è in corso! {/* 🔧 */}
+          </p>
+        </section>
 
         {/* Sezione 1: Registrazione */}
         <section style={{ marginBottom: 40 }}>

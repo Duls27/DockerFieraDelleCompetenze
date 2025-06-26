@@ -40,6 +40,7 @@ Tabelle:
 - capi
 - voti_ospiti
 - voti_capi
+- comunicazioni
 
 ---
 
@@ -78,10 +79,16 @@ CREATE TABLE registrazioni_generali (
 -- 2. configurazione
 -- =====================
 CREATE TABLE configurazione (
-  id SERIAL PRIMARY KEY,
-  modalita_fiera BOOLEAN DEFAULT FALSE
+  id            SERIAL PRIMARY KEY,
+  modalita_fiera BOOLEAN DEFAULT FALSE,
+  config_name    VARCHAR(50) UNIQUE
 );
-INSERT INTO configurazione (modalita_fiera) VALUES (FALSE);
+
+INSERT INTO configurazione (modalita_fiera, config_name)
+VALUES (FALSE, 'votazioni');
+
+INSERT INTO configurazione (modalita_fiera, config_name)
+VALUES (FALSE, 'registrazioni');
 
 -- =====================
 -- 3. amministratori
@@ -99,6 +106,7 @@ CREATE TABLE amministratori (
 INSERT INTO amministratori
         (nome,  cognome, email, username, password)
 VALUES  ('Super', 'Admin', 'simone.dopti@gmail.com', 'super.admin', '');
+
 
 -- =====================
 -- 4. stand  (figlio di registrazioni_generali)
@@ -164,5 +172,27 @@ CREATE TABLE voti_capi (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   CONSTRAINT fk_vc_miglior_impresa FOREIGN KEY (miglior_impresa) REFERENCES stand (vote_autenticator) ON DELETE SET NULL
 );
+
+-- ================================================================
+-- 8. Tabella per la sezione notizie
+-- ================================================================
+
+-- Crea la tabella con colonne per la comunicazione
+CREATE TABLE comunicazioni (
+    id INT PRIMARY KEY DEFAULT 1,
+    titolo VARCHAR(255) NOT NULL,
+    corpo TEXT NOT NULL,
+    data_pubblicazione TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO comunicazioni (id, titolo, corpo, data_pubblicazione)
+VALUES (
+  1,
+  'Benvenuto nella sezione comunicazioni',
+  'Qui troverai le notizie e gli aggiornamenti più importanti riguardo la Fiera delle Competenze. La comunicazione verrà aggiornata regolarmente.',
+  NOW()
+);
+
+
 
 /* Schema pronto e ottimizzato per PostgreSQL! */

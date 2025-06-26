@@ -1,44 +1,45 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Home from './pages/Home';
-import VotaOspiti from './pages/VotaOspiti.jsx';
+import Home, { Landing } from './pages/Home';   // Landing esportato da Home.jsx
+import VotaOspiti from './pages/VotaOspiti';
 import VotaCapi from './pages/VotaCapi';
-import StandView from './pages/StandView'; 
-import Admin from './pages/Admin'; // dashboard protetta con sottopagine
+import StandView from './pages/StandView';
 import Registrazione from './pages/Registrazione';
-import AdminLogin from './pages/AdminLogin';
-import ProtectedRoute from './ProtectedRoute';
 import HowToUse from './pages/HowToUse';
 
+import AdminLogin from './pages/AdminLogin';
+import Admin from './pages/Admin';          // dashboard protetta
+import ProtectedRoute from './ProtectedRoute';
 
-const App = () => {
-  return (
-    <Router>
-      <Routes>
-        {/* Pagina pubblica */}
-        <Route path="/" element={<Home />} />
-        <Route path="/vota/ospiti" element={<VotaOspiti />} />
-        <Route path="/vota/capi" element={<VotaCapi />} />
-        <Route path="/lista/stand" element={<StandView />} /> 
-        <Route path="/registrazione" element={<Registrazione />} />
-        <Route path="/come-funziona" element={<HowToUse />} />
+const App = () => (
+  <Router>
+    <Routes>
+      {/* ───────────────────────── Sezione pubblica con sidebar ───────────────────────── */}
+      <Route path="/" element={<Home />}>
+        {/* pagina principale (logo + titolo, ecc.) */}
+        <Route index element={<Landing />} />
 
+        {/* rotte figlie che ereditano la sidebar */}
+        <Route path="vota/ospiti"   element={<VotaOspiti />} />
+        <Route path="vota/capi"     element={<VotaCapi />} />
+        <Route path="lista/stand"   element={<StandView />} />
+        <Route path="registrazione" element={<Registrazione />} />
+        <Route path="come-funziona" element={<HowToUse />} />
+      </Route>
 
-        {/* Login admin (non protetta) */}
-        <Route path="/admin/login" element={<AdminLogin />} />
+      {/* ───────────────────────── Rotte senza sidebar ───────────────────────── */}
+      <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Rotta admin protetta, con tutte le sottopagine */}
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute>
-              <Admin />
-            </ProtectedRoute>
-          }
-        />
-      </Routes>
-    </Router>
-  );
-};
+      <Route
+        path="/admin/*"
+        element={
+          <ProtectedRoute>
+            <Admin />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  </Router>
+);
 
 export default App;
