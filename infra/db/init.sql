@@ -99,7 +99,7 @@ CREATE TABLE amministratori (
   cognome VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL,
   username VARCHAR(100) UNIQUE NOT NULL,
-  password VARCHAR(255) NOT NULL,
+  password VARCHAR(255),
   creato_il TIMESTAMP DEFAULT NOW()
 );
 
