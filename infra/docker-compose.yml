@@ -9,7 +9,7 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:               
+    ports:
       - "5432:5432"
 
   backend:
@@ -31,13 +31,15 @@ services:
       EMAIL_FROM: ${EMAIL_FROM}
     ports:
       - "5000:5000"
+    volumes:
+      - ./logs:/app/logs
     restart: on-failure
 
   frontend:
     build:
       context: ../frontend
       args:
-        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}  # <- qui variabile da .env
+        REACT_APP_API_BASE_URL: ${REACT_APP_API_BASE_URL}
     ports:
       - "3000:80"
     depends_on:

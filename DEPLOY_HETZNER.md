@@ -155,7 +155,6 @@ INSERT INTO amministratori
         (nome,  cognome, email, username, password)
 VALUES  ('Super', 'Admin', 'tua.email@gmail.com', 'super.admin', '');
 ```
-
 6. Lancia il build e avvia tutti i servizi con un solo comando
 Torna nella folder se non sei più li
 ```bash
