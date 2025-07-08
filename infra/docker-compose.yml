@@ -32,7 +32,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./logs:/app/logs
+      - ../backend/logs:/app/logs
     restart: on-failure
 
   frontend:
