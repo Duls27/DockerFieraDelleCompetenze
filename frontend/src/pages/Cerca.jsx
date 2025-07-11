@@ -13,6 +13,12 @@ const Cerca = () => {
   const [ospiti, setOspiti] = useState([]);
   const [stand, setStand] = useState([]);
 
+  const [zonaDownload, setZonaDownload] = useState('Tutte');
+
+  // Collapsabili
+  const [showSearch, setShowSearch] = useState(true);
+  const [showDownload, setShowDownload] = useState(true);
+
   const handleSearch = async () => {
     setError('');
     setCapi([]);
@@ -45,127 +51,182 @@ const Cerca = () => {
     }
   };
 
+  const handleDownload = (type) => {
+    const zonaParam = zonaDownload || 'Tutte';
+    const url = `${API_BASE}/download/${type}?zona=${encodeURIComponent(zonaParam)}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="container py-4">
-      <h2 className="mb-4">Ricerca per Zona e Gruppo</h2>
+      <h2 className="mb-4">🔍 Ricerca e Scarica</h2>
 
-      <div className="mb-3">
-        <label className="form-label">Zona</label>
-        <select
-          className="form-select"
-          value={zona}
-          onChange={e => setZona(e.target.value)}
-        >
-          <option value="">-- Seleziona una zona --</option>
-          <option value="Varese">Varese</option>
-          <option value="Pavia">Pavia</option>
-          <option value="Ticino-Olona">Ticino-Olona</option>
-          <option value="Milano">Milano</option>
-          <option value="Promise">Promise</option>
-          <option value="Mantova">Mantova</option>
-          <option value="Cremona-Lodi">Cremona-Lodi</option>
-          <option value="SoLCo">SoLCo</option>
-          <option value="Brimino">Brimino</option>
-          <option value="Brescia">Brescia</option>
-          <option value="Sebino">Sebino</option>
-        </select>
+      {/* BOX RICERCA */}
+      <div className="border rounded p-4 mb-4" style={{ backgroundColor: '#f9f9f9' }}>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h4 className="m-0">🔎 Ricerca per Zona e Gruppo</h4>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => setShowSearch(!showSearch)}>
+            {showSearch ? 'Nascondi' : 'Mostra'}
+          </button>
+        </div>
+
+        {showSearch && (
+          <>
+            <div className="mb-3">
+              <label className="form-label">Zona</label>
+              <select className="form-select" value={zona} onChange={e => setZona(e.target.value)}>
+                <option value="">-- Seleziona una zona --</option>
+                {['Varese', 'Pavia', 'Ticino-Olona', 'Milano', 'Promise', 'Mantova', 'Cremona-Lodi', 'SoLCo', 'Brimino', 'Brescia', 'Sebino'].map(z => (
+                  <option key={z} value={z}>{z}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Gruppo</label>
+              <input
+                type="text"
+                className="form-control"
+                value={gruppo}
+                onChange={e => setGruppo(e.target.value)}
+                placeholder="Inserisci nome gruppo (opzionale)"
+              />
+            </div>
+
+            {error && <div className="alert alert-danger">{error}</div>}
+
+            <button className="btn btn-primary mb-4" onClick={handleSearch} disabled={loading}>
+              {loading ? 'Ricerca...' : 'Cerca'}
+            </button>
+
+            {/* RISULTATI */}
+            {(capi.length > 0 || ospiti.length > 0 || stand.length > 0) && (
+              <>
+                {capi.length > 0 && (
+                  <>
+                    <h5>Capi</h5>
+                    <table className="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Nome Zona</th>
+                          <th>Nome Gruppo</th>
+                          <th>Vote Authenticator</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {capi.map((capo, index) => (
+                          <tr key={index}>
+                            <td>{capo.nome_zona}</td>
+                            <td>{capo.nome_gruppo}</td>
+                            <td>{capo.vote_autenticator}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
+                {ospiti.length > 0 && (
+                  <>
+                    <h5>Ospiti</h5>
+                    <table className="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Nome Zona</th>
+                          <th>Nome Gruppo</th>
+                          <th>Vote Authenticator</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ospiti.map((ospite, index) => (
+                          <tr key={index}>
+                            <td>{ospite.nome_zona}</td>
+                            <td>{ospite.nome_gruppo}</td>
+                            <td>{ospite.vote_autenticator}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+
+                {stand.length > 0 && (
+                  <>
+                    <h5>Stand</h5>
+                    <table className="table table-striped">
+                      <thead>
+                        <tr>
+                          <th>Nome Zona</th>
+                          <th>Nome Gruppo</th>
+                          <th>Nome Squadriglia</th>
+                          <th>Vote Authenticator</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {stand.map((s, index) => (
+                          <tr key={index}>
+                            <td>{s.nome_zona}</td>
+                            <td>{s.nome_gruppo}</td>
+                            <td>{s.nome_squadriglia}</td>
+                            <td>{s.vote_autenticator}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </>
+                )}
+              </>
+            )}
+
+            {!loading && capi.length === 0 && ospiti.length === 0 && stand.length === 0 && (
+              <p>Nessun risultato trovato.</p>
+            )}
+          </>
+        )}
       </div>
 
-      <div className="mb-3">
-        <label className="form-label">Gruppo</label>
-        <input
-          type="text"
-          className="form-control"
-          value={gruppo}
-          onChange={e => setGruppo(e.target.value)}
-          placeholder="Inserisci nome gruppo (opzionale)"
-        />
-      </div>
+      {/* BOX DOWNLOAD MASSIVO */}
+      <div className="border rounded p-4" style={{ backgroundColor: '#f9f9f9' }}>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h4 className="m-0">📥 Download Massivo</h4>
+          <button className="btn btn-sm btn-outline-secondary" onClick={() => setShowDownload(!showDownload)}>
+            {showDownload ? 'Nascondi' : 'Mostra'}
+          </button>
+        </div>
 
-      {error && <div className="alert alert-danger">{error}</div>}
-
-      <button className="btn btn-primary mb-4" onClick={handleSearch} disabled={loading}>
-        {loading ? 'Ricerca...' : 'Cerca'}
-      </button>
-
-      {/* Risultati */}
-      <div>
-        {capi.length > 0 && (
+        {showDownload && (
           <>
-            <h4>Capi</h4>
-            <table className="table table-striped">
-              <thead>
-                <tr>
-                  <th>Nome Zona</th>
-                  <th>Nome Gruppo</th>
-                  <th>Vote Authenticator</th>
-                </tr>
-              </thead>
-              <tbody>
-                {capi.map((capo, index) => (
-                  <tr key={index}>
-                    <td>{capo.nome_zona}</td>
-                    <td>{capo.nome_gruppo}</td>
-                    <td>{capo.vote_autenticator}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </>
-        )}
+            <p>Scarica tutti i codici registrati in formato PDF o CSV, filtrando per zona oppure scaricando tutte.</p>
 
-        {ospiti.length > 0 && (
-          <>
-            <h4>Ospiti</h4>
-            <table className="table table-striped">
-              <thead>
-                <tr>
-                  <th>Nome Zona</th>
-                  <th>Nome Gruppo</th>
-                  <th>Vote Authenticator</th>
-                </tr>
-              </thead>
-              <tbody>
-                {ospiti.map((ospite, index) => (
-                  <tr key={index}>
-                    <td>{ospite.nome_zona}</td>
-                    <td>{ospite.nome_gruppo}</td>
-                    <td>{ospite.vote_autenticator}</td>
-                  </tr>
+            <div className="mb-3">
+              <label className="form-label">Zona</label>
+              <select
+                className="form-select"
+                value={zonaDownload}
+                onChange={e => setZonaDownload(e.target.value)}
+              >
+                <option value="Tutte">-- Tutte le zone --</option>
+                {['Varese', 'Pavia', 'Ticino-Olona', 'Milano', 'Promise', 'Mantova', 'Cremona-Lodi', 'SoLCo', 'Brimino', 'Brescia', 'Sebino'].map(z => (
+                  <option key={z} value={z}>{z}</option>
                 ))}
-              </tbody>
-            </table>
-          </>
-        )}
+              </select>
+            </div>
 
-        {stand.length > 0 && (
-          <>
-            <h4>Stand</h4>
-            <table className="table table-striped">
-              <thead>
-                <tr>
-                  <th>Nome Zona</th>
-                  <th>Nome Gruppo</th>
-                  <th>Nome Squadriglia</th>
-                  <th>Vote Authenticator</th>
-                </tr>
-              </thead>
-              <tbody>
-                {stand.map((s, index) => (
-                  <tr key={index}>
-                    <td>{s.nome_zona}</td>
-                    <td>{s.nome_gruppo}</td>
-                    <td>{s.nome_squadriglia}</td>
-                    <td>{s.vote_autenticator}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="d-flex gap-3">
+              <button
+                className="btn btn-outline-danger"
+                onClick={() => handleDownload('pdf')}
+              >
+                📄 Scarica PDF
+              </button>
+              <button
+                className="btn btn-outline-success"
+                onClick={() => handleDownload('csv')}
+              >
+                📊 Scarica CSV
+              </button>
+            </div>
           </>
-        )}
-
-        {!loading && capi.length === 0 && ospiti.length === 0 && stand.length === 0 && (
-          <p>Nessun risultato trovato.</p>
         )}
       </div>
     </div>

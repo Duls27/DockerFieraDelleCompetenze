@@ -15,8 +15,8 @@ const sendCodiciEmail = async (toEmail, codiciCapi, codiciOspiti, codiciStand, n
 const htmlContent = `
   <div style="font-family: Arial, sans-serif; color: #333; line-height: 1.5;">
     <h2 style="color: #2e7d32;">🎉 Registrazione approvata!</h2>
-      <p><strong>Gruppo:</strong> ${nome_gruppo} <br/>
-      <strong>Zona:</strong> ${nome_zona}</p>
+    <p><strong>Gruppo:</strong> ${nome_gruppo} <br/>
+    <strong>Zona:</strong> ${nome_zona}</p>
 
     <p>Ecco i tuoi codici per la <strong>Fiera delle Competenze</strong>! 👏</p>
     <p><em>Ricordati che questi codici serviranno ad ognuno per validare il proprio voto!</em></p>
@@ -27,20 +27,6 @@ const htmlContent = `
         codiciCapi.length > 0 
           ? codiciCapi.map(c => `<li>✅ ${c}</li>`).join('') 
           : '<li><em>Nessun capo registrato</em></li>'
-      }
-    </ul>
-
-    <h4 style="color: #f57c00;">🎟️ Squadriglie:</h4>
-
-    <p style="margin-top: 1em;">
-      Questi sono i codici da dare alle squadriglie per autenticare il loro voto.</strong>
-    </p>
-
-    <ul>
-      ${
-        codiciOspiti.length > 0 
-          ? codiciOspiti.map(c => `<li>🎫 ${c}</li>`).join('') 
-          : '<li><em>Nessun ospite registrato</em></li>'
       }
     </ul>
 
@@ -58,6 +44,30 @@ const htmlContent = `
           : '<li><em>Nessuno stand registrato</em></li>'
       }
     </ul>
+
+    <h4 style="color: #f57c00;">🎟️ Squadriglie:</h4>
+
+    <p style="margin-top: 1em;">
+      Questi sono i codici da dare alle squadriglie per autenticare il loro voto.<br/>
+      <strong>I codici non sono associati a una singola squadriglia:</strong> potete distribuirli come preferite tra le squadriglie del vostro gruppo.
+    </p>
+
+    <ul>
+      ${
+        codiciOspiti.length > 0 
+          ? codiciOspiti.map(c => `<li>🎫 ${c}</li>`).join('') 
+          : '<li><em>Nessun ospite registrato</em></li>'
+      }
+    </ul>
+
+    <!-- 🔗 Sezione informativa -->
+    <div style="background-color: #e3f2fd; padding: 1em; margin-top: 2em; border-left: 4px solid #1976d2;">
+      <strong>ℹ️ Hai dubbi su come funziona il voto?</strong><br/>
+      👉 Scopri tutti i dettagli nella sezione dedicata della Web App:<br/>
+      <a href="http://91.99.153.69:3000" target="_blank" style="color: #1976d2; font-weight: bold;">
+        http://91.99.153.69:3000
+      </a>
+    </div>
 
     <hr style="margin-top: 2em; border: none; border-top: 1px solid #ccc;"/>
 

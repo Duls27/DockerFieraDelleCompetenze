@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const pool = require('./db');
 const logger  = require('./logger');
+const { Parser } = require('json2csv');
+const PDFDocument = require('pdfkit');
 
 const { sendCodiciEmail } = require('./mailer');
 const { sendAdminCredentialsEmail } = require('./mailer');
@@ -24,6 +26,62 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
+
+// Funzione per disegnare tabella con bordi e stile simile a Bootstrap
+function drawTableWithBorders(doc, headers, rows, startX, startY, rowHeight = 18, columnWidths) {
+  const tableWidth = columnWidths.reduce((a, b) => a + b, 0);
+  let y = startY;
+
+  // Intestazione: sfondo grigio scuro, testo bianco, font bold
+  doc.font('Helvetica-Bold').fontSize(9);
+  let x = startX;
+  headers.forEach((header, i) => {
+    doc.rect(x, y, columnWidths[i], rowHeight).fillAndStroke('#343a40', '#343a40'); // #343a40 = grigio scuro bootstrap
+    doc.fillColor('white').text(header, x + 4, y + 4, { width: columnWidths[i] - 8, align: 'left' });
+    x += columnWidths[i];
+  });
+
+  y += rowHeight;
+  doc.font('Helvetica').fontSize(8).fillColor('black');
+
+  rows.forEach((row, idx) => {
+    x = startX;
+
+    // Riga con sfondo alternato: bianco e grigio chiaro #f8f9fa (bootstrap light)
+    const fillColor = (idx % 2 === 0) ? '#ffffff' : '#f8f9fa';
+    doc.rect(x, y, tableWidth, rowHeight).fill(fillColor);
+
+    // Celle e bordi sottili grigio chiaro
+    headers.forEach((header, i) => {
+      const key = header.toLowerCase().replace(/ /g, '_');
+      const text = row[key] != null ? String(row[key]) : '';
+      doc.fillColor('black').text(text, x + 4, y + 4, { width: columnWidths[i] - 8, align: 'left' });
+      doc.rect(x, y, columnWidths[i], rowHeight).strokeColor('#dee2e6').stroke(); // #dee2e6 = grigio chiaro bootstrap
+      x += columnWidths[i];
+    });
+
+    y += rowHeight;
+
+    // Nuova pagina se si arriva a fondo
+    if (y + rowHeight > doc.page.height - 50) {
+      doc.addPage();
+      y = 50;
+
+      // Ridisegna intestazione su nuova pagina
+      doc.font('Helvetica-Bold').fontSize(9).fillColor('white');
+      x = startX;
+      headers.forEach((header, i) => {
+        doc.rect(x, y, columnWidths[i], rowHeight).fillAndStroke('#343a40', '#343a40');
+        doc.fillColor('white').text(header, x + 4, y + 4, { width: columnWidths[i] - 8, align: 'left' });
+        x += columnWidths[i];
+      });
+
+      y += rowHeight;
+      doc.font('Helvetica').fontSize(8).fillColor('black');
+    }
+  });
+}
+
 
 //GET methods
 
@@ -117,7 +175,6 @@ router.get('/registrazioni-generali/approvate', async (req, res) => {
 // --- GET: restituisce modalita_fiera per qualunque config_name
 router.get('/configurazione/:name', async (req, res) => {
   const configName = req.params.name;
-  logger.info(`Richiesta GET /configurazione/${configName}`);
 
   // opzionale: validazione dei nomi ammessi
   const nomiAmmessi = ['votazioni', 'registrazioni'];
@@ -138,7 +195,6 @@ router.get('/configurazione/:name', async (req, res) => {
     }
 
     const { modalita_fiera } = rows[0];
-    logger.info(`Modalità fiera (${configName}): ${modalita_fiera}`);
     res.json({ modalita_fiera });
   } catch (err) {
     logger.error('Errore nel recupero configurazione:', err);
@@ -186,6 +242,174 @@ router.get('/cerca', async (req, res) => {
     res.status(500).json({ error: 'Errore interno del server' });
   }
 });
+
+router.get('/download/csv', async (req, res) => {
+  try {
+    let zona = req.query.zona || 'Tutte';
+
+    let params = [];
+    let whereClause = '';
+
+    if (zona !== 'Tutte') {
+      whereClause = 'WHERE nome_zona = $1';
+      params.push(zona);
+    }
+
+    const capiQuery = `SELECT nome_zona, nome_gruppo, vote_autenticator, 'Capo' as tipo FROM capi ${whereClause}`;
+    const ospitiQuery = `SELECT nome_zona, nome_gruppo, vote_autenticator, 'Ospite' as tipo FROM ospiti ${whereClause}`;
+    const standQuery = `SELECT nome_zona, nome_gruppo, nome_squadriglia, vote_autenticator, 'Stand' as tipo FROM stand ${whereClause}`;
+
+    const [capiResult, ospitiResult, standResult] = await Promise.all([
+      pool.query(capiQuery, params),
+      pool.query(ospitiQuery, params),
+      pool.query(standQuery, params),
+    ]);
+
+    // Unifica e normalizza i dati
+    const dati = [
+      ...capiResult.rows.map(r => ({
+        tipo: r.tipo,
+        nome_zona: r.nome_zona,
+        nome_gruppo: r.nome_gruppo,
+        nome_squadriglia: '',
+        vote_autenticator: r.vote_autenticator,
+      })),
+      ...ospitiResult.rows.map(r => ({
+        tipo: r.tipo,
+        nome_zona: r.nome_zona,
+        nome_gruppo: r.nome_gruppo,
+        nome_squadriglia: '',
+        vote_autenticator: r.vote_autenticator,
+      })),
+      ...standResult.rows.map(r => ({
+        tipo: r.tipo,
+        nome_zona: r.nome_zona,
+        nome_gruppo: r.nome_gruppo,
+        nome_squadriglia: r.nome_squadriglia || '',
+        vote_autenticator: r.vote_autenticator,
+      })),
+    ];
+
+    // Ordina i dati
+    const tipoOrder = { Capo: 0, Ospite: 1, Stand: 2 };
+    dati.sort((a, b) => {
+      if (a.nome_zona < b.nome_zona) return -1;
+      if (a.nome_zona > b.nome_zona) return 1;
+      if (a.nome_gruppo < b.nome_gruppo) return -1;
+      if (a.nome_gruppo > b.nome_gruppo) return 1;
+      return tipoOrder[a.tipo] - tipoOrder[b.tipo];
+    });
+
+    // Genera CSV
+    const fields = ['tipo', 'nome_zona', 'nome_gruppo', 'nome_squadriglia', 'vote_autenticator'];
+    const json2csvParser = new Parser({ fields });
+    const csv = json2csvParser.parse(dati);
+
+    // Invia
+    res.header('Content-Type', 'text/csv');
+    res.attachment(`codici_${zona}.csv`);
+    res.send(csv);
+
+  } catch (error) {
+    logger.error('Errore durante il download CSV:', error);
+    res.status(500).json({ error: 'Errore interno del server' });
+  }
+});
+
+
+router.get('/download/pdf', async (req, res) => {
+  try {
+    const zona = req.query.zona || 'Tutte';
+
+    let params = [];
+    let whereClause = '';
+
+    if (zona !== 'Tutte') {
+      whereClause = 'WHERE nome_zona = $1';
+      params.push(zona);
+    }
+
+    const capiQuery = `SELECT nome_zona, nome_gruppo, vote_autenticator FROM capi ${whereClause}`;
+    const ospitiQuery = `SELECT nome_zona, nome_gruppo, vote_autenticator FROM ospiti ${whereClause}`;
+    const standQuery = `SELECT nome_zona, nome_gruppo, nome_squadriglia, vote_autenticator FROM stand ${whereClause}`;
+
+    const [capiResult, ospitiResult, standResult] = await Promise.all([
+      pool.query(capiQuery, params),
+      pool.query(ospitiQuery, params),
+      pool.query(standQuery, params),
+    ]);
+
+    // Unisci tutti i dati
+    const allRows = [];
+
+    capiResult.rows.forEach(r => {
+      allRows.push({
+        tipo: 'Capo',
+        nome_zona: r.nome_zona,
+        nome_gruppo: r.nome_gruppo,
+        nome_squadriglia: '',
+        vote_authenticator: r.vote_autenticator,
+      });
+    });
+    ospitiResult.rows.forEach(r => {
+      allRows.push({
+        tipo: 'Ospite',
+        nome_zona: r.nome_zona,
+        nome_gruppo: r.nome_gruppo,
+        nome_squadriglia: '',
+        vote_authenticator: r.vote_autenticator,
+      });
+    });
+    standResult.rows.forEach(r => {
+      allRows.push({
+        tipo: 'Stand',
+        nome_zona: r.nome_zona,
+        nome_gruppo: r.nome_gruppo,
+        nome_squadriglia: r.nome_squadriglia || '',
+        vote_authenticator: r.vote_autenticator,
+      });
+    });
+
+    // Ordina: prima zona, poi gruppo, poi tipo (Capo, Ospite, Stand)
+    allRows.sort((a, b) => {
+      if (a.nome_zona < b.nome_zona) return -1;
+      if (a.nome_zona > b.nome_zona) return 1;
+      if (a.nome_gruppo < b.nome_gruppo) return -1;
+      if (a.nome_gruppo > b.nome_gruppo) return 1;
+      // Ordine fisso tipo
+      const tipoOrder = { 'Capo': 0, 'Ospite': 1, 'Stand': 2 };
+      return (tipoOrder[a.tipo] || 3) - (tipoOrder[b.tipo] || 3);
+    });
+
+    const doc = new PDFDocument({ margin: 30, size: 'A4' });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=codici_${zona}.pdf`);
+
+    doc.pipe(res);
+
+    doc.fontSize(16).fillColor('#212529').text(`Codici Registrati - Zona: ${zona}`, { align: 'center' });
+    doc.moveDown();
+
+    if (allRows.length === 0) {
+      doc.fontSize(12).fillColor('black').text('Nessun dato trovato per la zona selezionata.', { align: 'center' });
+      doc.end();
+      return;
+    }
+
+    const headers = ['Tipo', 'Nome Zona', 'Nome Gruppo', 'Nome Squadriglia', 'Vote Authenticator'];
+    const columnWidths = [60, 110, 110, 110, 130];
+
+    drawTableWithBorders(doc, headers, allRows, 50, doc.y + 10, 18, columnWidths);
+
+    doc.end();
+
+  } catch (error) {
+    logger.error('Errore durante il download PDF:', error);
+    res.status(500).json({ error: 'Errore interno del server' });
+  }
+});
+
 
 
 /*  GET  /live-results
